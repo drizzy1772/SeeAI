@@ -97,7 +97,7 @@ class ToolCalled(BaseEvaluator):
                     found = True
                     break
             if found:
-                score=1.0,
+                score=1.0
                 reasoning="Tool found"
             else:
                 score=0.0
@@ -109,6 +109,53 @@ class ToolCalled(BaseEvaluator):
                 reasoning=reasoning,
                 evaluator_name=self.name
             )
-            
 
+class TrajectoryEvaluator(BaseEvaluator):
+    def __init__(self, rubric: str, model: str = "gemini-3.5-flash"):
+        super().__init__(name="TrajectoryEvaluator")
+        self.rubric = rubric
+        self.model = model
+        self.client = genai.Client()
+    
+    def evaluate(self, case: Case, actual_output: str, trajectory = None):
+        if trajectory is None:
+            result = Report(
+                case_name=case.name,
+                overall_score=0.0,
+                reasoning="No trajectory provided",
+                evaluator_name=self.name
+            )
+            return result
+
+        promt = (
+            "You are an AI judge. Evaluate the agent's tool-call trajectory \n"
+            f"Rubric:\n{self.rubric}\n\n"
+            "Return a JSON object with exactly two keys:\n"
+            "- 'score': a float between 0.0 and 1.0\n"
+            "- 'reasoning': a brief string explaining why you gave this score."    
+        )
+
+        user_promt = f"Task: {case.input}\nAgent response: {json.dumps(trajectory)}"
+        
+        try:
+            response = self.client.models.generate_content(
+                model = self.model,
+                contents=user_promt,
+                config=types.GenerateContentConfig(
+                    system_instruction=promt,
+                    response_mime_type="application/json",
+                )
+            )
+            result = json.loads(response.text)
+            score = float(result.get("score", 0.0))
+            reasoning = result.get('reasoning', "No reasoning provided")
+        except Exception as e:
+            score = 0.0
+            reasoning = f"Judge failed: {str(e)}"
             
+        return Report(
+            case_name=case.name,
+            overall_score=score,
+            reasoning=reasoning,
+            evaluator_name=self.name
+        )
