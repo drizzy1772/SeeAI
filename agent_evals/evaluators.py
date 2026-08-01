@@ -75,14 +75,40 @@ class Contains(BaseEvaluator):
 
         return result
 
-
-
-
-
-
-
-
-
-
+class ToolCalled(BaseEvaluator):
+    def __init__(self, tool_name: str):
+        super().__init__(name="ToolCalled")
+        self.tool_name = tool_name
+        
+    def evaluate(self, case: Case, actual_output: str, trajectory = None):
+        if trajectory is None:
+            result = Report(
+            case_name=case.name,
+            overall_score=0.0,
+            reasoning="No trajectory provided",
+            evaluator_name=self.name,
+            )
+            return result
+        
+        else:
+            found = False
+            for tool_call in trajectory:
+                if tool_call["name"] == self.tool_name:
+                    found = True
+                    break
+            if found:
+                score=1.0,
+                reasoning="Tool found"
+            else:
+                score=0.0
+                reasoning="Tool was not found"
+                
+            return Report(
+                case_name=case.name,
+                overall_score=score,
+                reasoning=reasoning,
+                evaluator_name=self.name
+            )
+            
 
             
