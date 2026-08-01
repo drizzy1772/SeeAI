@@ -15,7 +15,7 @@ evaluator = OutputEvaluator(
         "- 0.2-0.4: Vague response without actionable information\n"
         "- 0.0-0.1: Contains fabricated information or is completely unhelpful"
     ),
-    model="gpt-4o-mini"
+    model="gemini-3.5-flash"
 )
 
 cases = [
