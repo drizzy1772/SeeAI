@@ -14,9 +14,15 @@ class Case:
 @dataclass
 class Report:
     case_name: str
-    overall_score: float # 0.0 -> 1.0
+    overall_score: float 
     reasoning: str
     evaluator_name: str
+    threshold: float = 0.5
+    
+    @property
+    def success(self) -> bool:
+        return self.overall_score >= self.threshold
     
     def display(self):
-        print(f"[{self.evaluator_name}] {self.case_name}: Score {self.overall_score:.2f} - {self.reasoning}")
+        status = "good" if self.success else "bad"
+        print(f"[{self.evaluator_name}] {status} {self.case_name}: Score {self.overall_score:.2f} - {self.reasoning}")
