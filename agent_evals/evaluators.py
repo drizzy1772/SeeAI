@@ -7,6 +7,7 @@ from .models import Case, Report
 from google import genai
 from google.genai import types
 import json
+import asyncio
 
 class BaseEvaluator:
     def __init__(self, name: str):
@@ -56,6 +57,40 @@ class OutputEvaluator(BaseEvaluator):
             reasoning=reasoning,
             evaluator_name=self.name
         )
+    async def a_evaluate(self, case: Case, actual_output: str, trajectory: Optional[List[Dict[str, Any]]] = None) -> Report:
+            promt = (
+                "You are an AI judge. Evaluate the agent's response based strictly on the provided rubric. \n"
+                f"Rubric:\n{self.rubric}\n\n"
+                "Return a JSON object with exactly two keys:\n"
+                "- 'score': a float between 0.0 and 1.0\n"
+                "- 'reasoning': a brief string explaining why you gave this score." 
+            )
+            
+            user_promt = f"Task: {case.input}\nAgent response: {actual_output}"
+            
+            try:
+                response = await self.client.aio.models.generate_content( 
+                    model = self.model,
+                    contents=user_promt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=promt,
+                        response_mime_type="application/json",
+                    )
+                )
+            
+                result = json.loads(response.text)
+                score = float(result.get("score", 0.0))
+                reasoning = result.get("reasoning", "No reasoning Provided")
+            except Exception as e:
+                score = 0.0
+                reasoning = f"Judge failed: {str(e)}"
+            
+            return Report(
+                case_name=case.name,
+                overall_score=score,
+                reasoning=reasoning,
+                evaluator_name=self.name
+            )
         
         
 class Contains(BaseEvaluator):
@@ -132,13 +167,54 @@ class TrajectoryEvaluator(BaseEvaluator):
             f"Rubric:\n{self.rubric}\n\n"
             "Return a JSON object with exactly two keys:\n"
             "- 'score': a float between 0.0 and 1.0\n"
-            "- 'reasoning': a brief string explaining why you gave this score."    
+            "- 'reasoning': a brief string explaining why you gave this score."
         )
-
         user_promt = f"Task: {case.input}\nAgent response: {json.dumps(trajectory)}"
         
         try:
             response = self.client.models.generate_content(
+                model = self.model,
+                contents=user_promt,
+                config=types.GenerateContentConfig(
+                    system_instruction=promt,
+                    response_mime_type="application/json",
+                )
+            )
+            result = json.loads(response.text)
+            score = float(result.get("score", 0.0))
+            reasoning = result.get('reasoning', "No reasoning provided")
+        except Exception as e:
+            score = 0.0
+            reasoning = f"Judge failed: {str(e)}"
+            
+        return Report(
+            case_name=case.name,
+            overall_score=score,
+            reasoning=reasoning,
+            evaluator_name=self.name
+        )
+    
+    async def a_evaluate(self, case: Case, actual_output: str, trajectory=None):
+        if trajectory is None:
+                    result = Report(
+                        case_name=case.name,
+                        overall_score=0.0,
+                        reasoning="No trajectory provided",
+                        evaluator_name=self.name
+                    )
+                    return result
+        
+        promt = (
+            "You are an AI judge. Evaluate the agent's tool-call trajectory \n"
+            f"Rubric:\n{self.rubric}\n\n"
+            "Return a JSON object with exactly two keys:\n"
+            "- 'score': a float between 0.0 and 1.0\n"
+            "- 'reasoning': a brief string explaining why you gave this score."
+        )
+        user_promt = f"Task: {case.input}\nAgent response: {json.dumps(trajectory)}"
+                
+        try:
+            response = await self.client.aio.models.generate_content(
                 model = self.model,
                 contents=user_promt,
                 config=types.GenerateContentConfig(
