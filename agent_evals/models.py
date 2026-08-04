@@ -18,6 +18,8 @@ class Report:
     reasoning: str
     evaluator_name: str
     threshold: float = 0.5
+    model: Optional[str] = None
+    hyperparameters: Optional[dict] = None
     
     @property
     def success(self) -> bool:

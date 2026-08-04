@@ -12,7 +12,8 @@ import asyncio
 class BaseEvaluator:
     def __init__(self, name: str):
         self.name = name
-    
+        self.cache = {}
+        
     def evaluate(self, case: Case, actual_output: str, trajectory: Optional[List[Dict[str, Any]]] = None) -> Report:
         raise NotImplementedError("Subclasses must implement evaluate()")
     
@@ -24,6 +25,12 @@ class OutputEvaluator(BaseEvaluator):
         self.client = genai.Client()
     
     def evaluate(self, case: Case, actual_output: str, trajectory: Optional[List[Dict[str, Any]]] = None) -> Report:
+        cache_key = f"{case.name}:{actual_output}"
+        
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+
+        
         promt = (
             "You are an AI judge. Evaluate the agent's response based strictly on the provided rubric. \n"
             f"Rubric:\n{self.rubric}\n\n"
@@ -51,12 +58,17 @@ class OutputEvaluator(BaseEvaluator):
             score = 0.0
             reasoning = f"Judge failed: {str(e)}"
         
-        return Report(
+        report = Report(
             case_name=case.name,
             overall_score=score,
             reasoning=reasoning,
-            evaluator_name=self.name
+            evaluator_name=self.name,
+            model=self.model,
+            hyperparameters={"rubric": self.rubric}  
         )
+        self.cache[cache_key] = report
+        return report
+    
     async def a_evaluate(self, case: Case, actual_output: str, trajectory: Optional[List[Dict[str, Any]]] = None) -> Report:
             promt = (
                 "You are an AI judge. Evaluate the agent's response based strictly on the provided rubric. \n"
@@ -89,7 +101,9 @@ class OutputEvaluator(BaseEvaluator):
                 case_name=case.name,
                 overall_score=score,
                 reasoning=reasoning,
-                evaluator_name=self.name
+                evaluator_name=self.name,
+                model=self.model,
+                hyperparameters={"rubric": self.rubric}
             )
         
         
@@ -158,6 +172,13 @@ class TrajectoryEvaluator(BaseEvaluator):
         self.client = genai.Client()
     
     def evaluate(self, case: Case, actual_output: str, trajectory = None):
+        cache_key = f"{case.name}:{json.dumps(trajectory)}"
+        
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+                    
+        
+        
         if trajectory is None:
             result = Report(
                 case_name=case.name,
@@ -192,12 +213,16 @@ class TrajectoryEvaluator(BaseEvaluator):
             score = 0.0
             reasoning = f"Judge failed: {str(e)}"
             
-        return Report(
+        report = Report(
             case_name=case.name,
             overall_score=score,
             reasoning=reasoning,
-            evaluator_name=self.name
+            evaluator_name=self.name,
+            model=self.model,
+            hyperparameters={"rubric": self.rubric}
         )
+        self.cache[cache_key] = report
+        return report
     
     async def a_evaluate(self, case: Case, actual_output: str, trajectory=None):
         if trajectory is None:
@@ -238,5 +263,7 @@ class TrajectoryEvaluator(BaseEvaluator):
             case_name=case.name,
             overall_score=score,
             reasoning=reasoning,
-            evaluator_name=self.name
+            evaluator_name=self.name,
+            model=self.model,
+            hyperparameters={"rubric": self.rubric}
         )
