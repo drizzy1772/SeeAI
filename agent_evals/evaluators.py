@@ -109,7 +109,10 @@ class Contains(BaseEvaluator):
         result = Report(case_name=case.name, overall_score=score, reasoning=reasoning, evaluator_name="Contains")
 
         return result
-
+    
+    async def a_evaluate(self, case, actual_output, trajectory=None):
+        return self.evaluate(case, actual_output, trajectory)
+    
 class ToolCalled(BaseEvaluator):
     def __init__(self, tool_name: str):
         super().__init__(name="ToolCalled")
@@ -144,7 +147,9 @@ class ToolCalled(BaseEvaluator):
                 reasoning=reasoning,
                 evaluator_name=self.name
             )
-
+    async def a_evaluate(self, case, actual_output, trajectory=None):
+        return self.evaluate(case, actual_output, trajectory)
+    
 class TrajectoryEvaluator(BaseEvaluator):
     def __init__(self, rubric: str, model: str = "gemini-3.5-flash"):
         super().__init__(name="TrajectoryEvaluator")
