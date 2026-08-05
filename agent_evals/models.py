@@ -10,7 +10,9 @@ class Case:
     input: str
     expected_output: Optional[str] = None
     expected_trajectory: Optional[List[str]] = None
-
+    flaky: bool = False
+    
+    
 @dataclass
 class Report:
     case_name: str
@@ -20,6 +22,7 @@ class Report:
     threshold: float = 0.5
     model: Optional[str] = None
     hyperparameters: Optional[dict] = None
+    is_flaky: bool = False
     
     @property
     def success(self) -> bool:
