@@ -8,6 +8,8 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
 from opentelemetry.trace import Tracer
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.resources import Resource
+
 from typing import List
 import asyncio
 import hashlib
@@ -17,12 +19,25 @@ from typing import List
 import asyncio
 import hashlib
 
+import os
+import hashlib
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
+
+load_dotenv()
+
+client = AsyncOpenAI(
+    api_key=os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
+)
+
+
 resource = Resource(attributes={
     "service.name": "seeai-rag-telemetry"
 })
 provider = TracerProvider(resource=resource)
 
-otlp_exporter = OTLPSpanExporter(endpoints="https://127.0.0.1:4317", insecure=True)
+otlp_exporter = OTLPSpanExporter(endpoint="127.0.0.1:4317", insecure=True)
 
 processor = BatchSpanProcessor(otlp_exporter)
 
@@ -32,15 +47,6 @@ provider.add_span_processor(processor)
 
 
 app = FastAPI()
-
-"write all inf in therminal"
-provider = TracerProvider()
-processor = SimpleSpanProcessor(ConsoleSpanExporter())
-
-
-trace.set_tracer_provider(provider)
-tracer: Tracer = trace.get_tracer(__name__)
-provider.add_span_processor(processor)
 
 async def retrieve_documents(query: str) -> List[str]:
     await asyncio.sleep(0.05)
@@ -52,39 +58,52 @@ async def retrieve_documents(query: str) -> List[str]:
 
 def build_promt(query: str, documents: List[str]) -> str:
     save = "\n".join(documents)
-    return f"""
+    return f"Context:\n{save}\n\nQuestion:\n{query}"
 
-Context:
-{save}
 
-Question:
-{query}
-
-"""
-
-class LLMResponse:
-    def __init__(self, text: str, promt_tokens: int, completion_tokens: int):
-        self.text = text
-        self.promt_tokens = promt_tokens
-        self.completion_tokens = completion_tokens
-        
-    @property
-    def total_tokens(self) -> int:
-        return self.promt_tokens + self.completion_tokens
-        
-async def call_llm(promt: str) -> LLMResponse:
-    await asyncio.sleep(0.2)
+@tracer.start_as_current_span("llm_call")
+async def call_llm(promt: str) -> str:
+    span = trace.get_current_span()
     
-    response_text = (
-        "FastAPI and OpenTelemetry enable end-to-end LLM observability."
-    )
+    promt_hash = hashlib.sha256(promt.encode('utf-8')).hexdigest()
+    span.set_attribute("llm.request.promt_hash", promt_hash)
     
-    promt_tokens = len(promt.split())
-    completion_tokens = len(response_text.split())
-    return LLMResponse(response_text, promt_tokens, completion_tokens)
+    model_name = "llama3-8b-8192"
+    span.set_attribute("llm.model", model_name)
+    span.set_attribute("llm.provider", "groq")
+    
+    try:
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "You are a helpful AI assistant. Answer concisely."},
+                {"role": "user", "content": promt}
+            ],
+            temperature=0.7,
+        )
 
-def summarize_response(response: LLMResponse) -> str:
-    return response.text
+        answer = response.choices[0].message.content
+        
+        promt_tokens = response.usage.promt_tokens
+        completion_tokens = response.usage.completion_tokens
+        total_tokens = response.usage.total_tokens
+        
+        span.set_attribute("llm.usage.promt_tokens", promt_tokens)
+        span.set_attribute("llm.usage.completion_tokens", completion_tokens)
+        span.set_attribute("llm.usage.total_tokens", total_tokens)
+        
+        cost = (total_tokens / 1_000_000) * 0.05
+        span.set_attribute("llm.cost.usd", cost)
+        
+        response_hash = hashlib.sha256(answer.encode('utf-8')).hexdigest()
+        span.set_attribute("llm.response.hash", response_hash)
+        return answer
+    
+    except Exception as e:
+        span.record_exception(e)
+        span.set_status(trace.status.Status(trace.status.StatusCode.ERROR))
+        raise e
+
 
 @app.post("/query")
 async def raq_query(request: Request, query: str):
@@ -94,46 +113,18 @@ async def raq_query(request: Request, query: str):
         http_span.set_attribute("https.route", "/query")
     
         with tracer.start_as_current_span("rag.retriveal") as retrieval_span:
-            retrieval_span.set_attribute("rag.top_k", 5)
-            retrieval_span.set_attribute("rag.similarity_threshold", 0.8)
+            retrieval_span.set_attribute("rag.top_k", 3)
             documents = await retrieve_documents(query)
+            retrieval_span.set_attribute("rag.similarity_threshold", len(documents))
             
-            retrieval_span.set_attribute(
-                "rag/documents_returned",
-                len(documents),
-            )
-            
-        with tracer.start_as_current_span("llm.call") as llm_span:
-            llm_span.set_attribute("llm.provider", "example")
-            llm_span.set_attribute("llm.model", "example-llm")
-            llm_span.set_attribute("llm.temperature", 0.7)
-            llm_span.set_attribute("llm.promt_template_id", "rag_v1")
-            
-            promt = build_promt(query, documents)
-            
-            promt_hash = hashlib.sha256(promt.encode()).hexdigest()
-            llm_span.set_attribute("llm.promt_hash", promt_hash)
-            llm_span.set_attribute("llm.promt_length", len(promt))
-            
-            response = await call_llm(promt)
-            
-            response_hash = hashlib.sha256(
-                    response.text.encode()
-            ).hexdigest()
-            llm_span.set_attribute("llm.response_hash", response_hash)
-            
-            llm_span.set_attribute("llm.usage.promt_tokens", response.promt_tokens)
-            llm_span.set_attribute("llm.usage.completion.tokens", response.completion_tokens)
-            llm_span.set_attribute("llm.usage.total_tokens", response.total_tokens)
-            
-            estimated_cost = response.total_tokens * 0.000002
-            llm_span.set_attribute("llm.cost_estimated_usd", estimated_cost)
-            
+        promt = build_promt(query, documents)    
+        
+        answer = await call_llm(promt)
+        
         with tracer.start_as_current_span("llm.postprocess") as post_span:
-            summary = summarize_response(response)
             post_span.set_attribute(
                 "llm.summary_length",
-                len(summary),
+                len(answer),
             )
     
-    return {"summary": summary}
+    return {"summary": answer}
