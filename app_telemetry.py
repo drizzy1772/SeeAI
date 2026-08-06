@@ -68,7 +68,7 @@ async def call_llm(promt: str) -> str:
     promt_hash = hashlib.sha256(promt.encode('utf-8')).hexdigest()
     span.set_attribute("llm.request.promt_hash", promt_hash)
     
-    model_name = "llama3-8b-8192"
+    model_name = "openai/gpt-oss-20b"
     span.set_attribute("llm.model", model_name)
     span.set_attribute("llm.provider", "groq")
     
@@ -84,11 +84,11 @@ async def call_llm(promt: str) -> str:
 
         answer = response.choices[0].message.content
         
-        promt_tokens = response.usage.promt_tokens
+        prompt_tokens = response.usage.prompt_tokens
         completion_tokens = response.usage.completion_tokens
         total_tokens = response.usage.total_tokens
         
-        span.set_attribute("llm.usage.promt_tokens", promt_tokens)
+        span.set_attribute("llm.usage.promt_tokens", prompt_tokens)
         span.set_attribute("llm.usage.completion_tokens", completion_tokens)
         span.set_attribute("llm.usage.total_tokens", total_tokens)
         

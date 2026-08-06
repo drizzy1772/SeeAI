@@ -1,0 +1,19 @@
+
+
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: seeai_pgvector
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: seeai_rag
+    ports:
+      - "5439:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata:
