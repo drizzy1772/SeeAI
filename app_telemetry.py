@@ -24,6 +24,12 @@ import hashlib
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
+from sqlalchemy import select
+from database import async_session_maker, DocumentModel
+from sentence_transformers import SentenceTransformer
+
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
 load_dotenv()
 
 client = AsyncOpenAI(
@@ -48,14 +54,20 @@ provider.add_span_processor(processor)
 
 app = FastAPI()
 
-async def retrieve_documents(query: str) -> List[str]:
-    await asyncio.sleep(0.05)
-    return [
-        "FastAPI enables high-performance async APIs.",
-        "OpenTelemetry provides vendor-neutral observability.",
-        "LLM observability requires tracing prompts and tokens.",
-    ]
-
+async def retrieve_documents(query: str, top_k: int = 2) -> list[str]:
+    query_embedding = embedding_model.encode(query).tolist()
+    
+    async with async_session_maker() as session:
+        stmt = select(DocumentModel).order_by(
+            DocumentModel.embedding.cosine_distance(query_embedding)
+        ).limit(top_k)
+        
+        result = await session.execute(stmt)
+        docs = result.scalars().all()
+        
+        return [doc.content for doc in docs]
+        
+        
 def build_promt(query: str, documents: List[str]) -> str:
     save = "\n".join(documents)
     return f"Context:\n{save}\n\nQuestion:\n{query}"
