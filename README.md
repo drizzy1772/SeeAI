@@ -90,33 +90,34 @@ POST /query?query=What+is+RAG%3F
 Swagger UI available at: http://localhost:8000/docs
 
 ## Testing
+## Project Structure
 
+```text
 SeeAI/
-├── app_telemetry.py     # Routes, RAG logic & OpenTelemetry setup
-├── agent_evals
-│   ├── evaluators.py
-│   ├── experiment.py
-│   ├── generator.py
-│   ├── __init__.py
-│   ├── models.py
-│   └── pytest_utils.py
-├── app_telemetry.py
-├── database.py
-├── init_db.py
-├── test_async.py
-├── test_deterministic_evaluators.py
-├── test_evals.py
-├── test_generator.py
-├── test_hyperparams.py
-├── test_output_evaluator.py
-├── test_run.py
-├── test_trajectory_evaluator.py
-└── test_trajectory.py
-├── database.py          # Async DB connection & DocumentModel
-├── init_db.py           # DB initialization & initial embeddings generator
-├── docker-compose.yml   # PostgreSQL (pgvector) & Jaeger services
-├── .env                 # Environment variables (Groq API, DB URL)
-├── .gitignore
-├── requirements.txt
-└── README.md
+├── agent_evals/                     # LLM Agent evaluation framework
+│   ├── evaluators.py                # Logic for evaluating agent responses
+│   ├── experiment.py                # Experiment tracking and execution
+│   ├── generator.py                 # Test data and prompt generators
+│   ├── models.py                    # Data schemas for evaluations
+│   ├── pytest_utils.py              # Utilities for pytest integration
+│   └── __init__.py
+├── app_telemetry.py                 # FastAPI routes, RAG logic & OpenTelemetry setup
+├── database.py                      # Async DB connection & DocumentModel schema
+├── init_db.py                       # DB init script & embeddings generator
+├── docker-compose.yml               # PostgreSQL (pgvector) & Jaeger services
+├── requirements.txt                 # Project dependencies
+├── .env                             # Environment variables (Groq API, DB URL)
+├── .gitignore                       # Git ignored files and folders
+├── README.md                        # Project documentation
+│
+└── Tests/                           # Pytest suite
+    ├── test_async.py                # Tests for async operations
+    ├── test_deterministic_evaluators.py 
+    ├── test_evals.py                # Core evaluation pipeline tests
+    ├── test_generator.py            # Tests for generation logic
+    ├── test_hyperparams.py          # Hyperparameter tuning tests
+    ├── test_output_evaluator.py     # LLM output evaluation tests
+    ├── test_run.py                  # App execution tests
+    ├── test_trajectory.py           # Agent interaction trajectory tests
+    └── test_trajectory_evaluator.py # Trajectory evaluation tests
 
