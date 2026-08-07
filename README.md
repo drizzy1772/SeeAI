@@ -15,19 +15,19 @@ A REST API for Retrieval-Augmented Generation (RAG) with semantic vector search,
 
 ## Features
 
-*Asynchronous Retrieval-Augmented Generation (RAG) pipeline
+* Asynchronous Retrieval-Augmented Generation (RAG) pipeline
 
-*Semantic vector search using PostgreSQL pgvector and cosine distance
+* Semantic vector search using PostgreSQL pgvector and cosine distance
 
-*Local offline embedding generation using all-MiniLM-L6-v2
+* Local offline embedding generation using all-MiniLM-L6-v2
 
-*Integration with Groq API for lightning-fast LLM inference
+* Integration with Groq API for lightning-fast LLM inference
 
-*Comprehensive LLM observability (tracking prompts, token usage, latency, and USD cost)
+* Comprehensive LLM observability (tracking prompts, token usage, latency, and USD cost)
 
-*Distributed tracing across all operations via OpenTelemetry and Jaeger
+* Distributed tracing across all operations via OpenTelemetry and Jaeger
 
-*Automated database initialization and vector indexing script
+* Automated database initialization and vector indexing script
 
 ## Prerequisites
 
