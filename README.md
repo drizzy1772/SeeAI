@@ -81,3 +81,42 @@ POST /query?query=What+is+RAG%3F
 }
 
 ## API ENDPOINTS
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | `/query` | No |
+
+## API Docs
+Swagger UI available at: http://localhost:8000/docs
+
+## Testing
+
+SeeAI/
+├── app_telemetry.py     # Routes, RAG logic & OpenTelemetry setup
+├── agent_evals
+│   ├── evaluators.py
+│   ├── experiment.py
+│   ├── generator.py
+│   ├── __init__.py
+│   ├── models.py
+│   └── pytest_utils.py
+├── app_telemetry.py
+├── database.py
+├── init_db.py
+├── test_async.py
+├── test_deterministic_evaluators.py
+├── test_evals.py
+├── test_generator.py
+├── test_hyperparams.py
+├── test_output_evaluator.py
+├── test_run.py
+├── test_trajectory_evaluator.py
+└── test_trajectory.py
+├── database.py          # Async DB connection & DocumentModel
+├── init_db.py           # DB initialization & initial embeddings generator
+├── docker-compose.yml   # PostgreSQL (pgvector) & Jaeger services
+├── .env                 # Environment variables (Groq API, DB URL)
+├── .gitignore
+├── requirements.txt
+└── README.md
+
