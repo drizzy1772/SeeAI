@@ -89,7 +89,6 @@ POST /query?query=What+is+RAG%3F
 ## API Docs
 Swagger UI available at: http://localhost:8000/docs
 
-## Testing
 ## Project Structure
 
 ```text
