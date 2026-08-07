@@ -31,8 +31,8 @@ A REST API for Retrieval-Augmented Generation (RAG) with semantic vector search,
 
 ## Prerequisites
 
-*Python 3.10+
-*Docker & Docker Compose
+* Python 3.10+
+* Docker & Docker Compose
 
 1. **Clone the repository**
 ```bash
