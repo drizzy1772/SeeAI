@@ -76,7 +76,8 @@ POST /query?query=What+is+RAG%3F
 
 ## Response Example
 {
-  "summary": "RAG (Retrieval-Augmented Generation) combines vector search with LLMs to ground responses in private data."
+  "summary": "RAG (Retrieval-Augmented Generation)
+  combines vector search with LLMs to ground responses in private data."
 }
 
 ## API ENDPOINTS
