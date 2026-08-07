@@ -123,4 +123,20 @@ SeeAI/
     ├── test_run.py                  # App execution tests
     ├── test_trajectory.py           # Agent interaction trajectory tests
     └── test_trajectory_evaluator.py # Trajectory evaluation tests
+```
+
+
+## Author
+
+This project is developed by Drizzy1772.
+
+## License
+
+This project is licensed under MIT License.
+
+
+
+
+
+
 
