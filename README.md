@@ -94,6 +94,9 @@ Swagger UI available at: http://localhost:8000/docs
 
 ```text
 SeeAI/
+
+├──.github/workflows
+│   ├── evals.yml                    # CI/CD yml.
 ├── agent_evals/                     # LLM Agent evaluation framework
 │   ├── evaluators.py                # Logic for evaluating agent responses
 │   ├── experiment.py                # Experiment tracking and execution
