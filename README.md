@@ -74,6 +74,10 @@ uvicorn app_telemetry:app --reload
 POST /query?query=What+is+RAG%3F
 ```
 
+## Structure of Project:
+<img width="715" height="469" alt="wowowowo drawio" src="https://github.com/user-attachments/assets/e25c8373-7dd1-4de5-8c2f-946c0a50d2c9" />
+
+
 ## Response Example
 {
   "summary": "RAG (Retrieval-Augmented Generation)
